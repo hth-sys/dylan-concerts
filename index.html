@@ -124,7 +124,7 @@ const timeStr = e.dates.start.dateTime
     const isSoon = days <= 7;
     const city = venue ? `${venue.city?.name}, ${venue.state?.stateCode || venue.country?.countryCode}` : '';
     return `<div class="concert-card">
-      <div class="concert-date">${dateStr}</div>
+      <div class="concert-date">${dateStr}${timeStr ? ' · ' + timeStr : ''}</div>
       <div class="concert-venue">${venue?.name || 'Venue TBA'}</div>
       <div class="concert-location">${city}</div>
       <div class="concert-footer">
