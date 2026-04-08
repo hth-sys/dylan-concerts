@@ -114,7 +114,11 @@ function renderConcerts() {
   document.getElementById('concert-list').innerHTML = filtered.map(e => {
     const venue = e._embedded?.venues?.[0];
     const d = new Date(e.dates.start.localDate);
-    const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+    const localDate = new Date(e.dates.start.dateTime || e.dates.start.localDate);
+const dateStr = localDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+const timeStr = e.dates.start.dateTime
+  ? localDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  : e.dates.start.localTime?.slice(0,5) || '';
     const days = daysAway(e.dates.start.localDate);
     const daysLabel = days === 0 ? 'Tonight!' : days === 1 ? 'Tomorrow!' : `${days} days away`;
     const isSoon = days <= 7;
