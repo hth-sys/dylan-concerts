@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bob Dylan Concerts</title>
+  <meta name="theme-color" content="#1a1a1a" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f4; }
+    .app { max-width: 480px; margin: 0 auto; padding: 1rem; }
+    .header { background: #1a1a1a; border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 12px; }
+    .header-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+    .header-text h1 { color: #fff; font-size: 20px; font-weight: 600; }
+    .header-text p { color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 2px; }
+    .filter-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; background: #fff; color: #555; font-size: 13px; cursor: pointer; }
+    .filter-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    .concert-card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 10px; }
+    .concert-date { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .concert-venue { font-size: 16px; font-weight: 600; color: #111; margin-bottom: 2px; }
+    .concert-location { font-size: 14px; color: #555; margin-bottom: 6px; }
+    .concert-footer { display: flex; justify-content: space-between; align-items: center; }
+    .days-away { font-size: 12px; color: #aaa; }
+    .soon { color: #e65c00; font-weight: 600; }
+    .ticket-link { font-size: 12px; color: #1a1a1a; text-decoration: none; border: 1px solid #ddd; padding: 4px 10px; border-radius: 20px; }
+    .count { font-size: 13px; color: #888; margin-bottom: 10px; }
+    .no-shows { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
+    .updated { font-size: 11px; color: #bbb; text-align: center; margin-top: 1rem; padding-bottom: 1rem; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-icon">🎸</div>
+    <div class="header-text">
+      <h1>Bob Dylan</h1>
+      <p>Upcoming concerts</p>
+    </div>
+  </div>
+
+  <div class="filter-row" id="filters"></div>
+  <div class="count" id="count"></div>
+  <div id="concert-list"></div>
+  <div class="updated">Last updated: April 2026 · Source: boblinks.com</div>
+</div>
+
+<script>
+const concerts = [
+  { date: "2026-04-03", venue: "Masonic Temple Theatre", city: "Detroit", state: "Michigan" },
+  { date: "2026-04-04", venue: "Masonic Temple Theatre", city: "Detroit", state: "Michigan" },
+  { date: "2026-04-06", venue: "The Louisville Palace", city: "Louisville", state: "Kentucky" },
+  { date: "2026-04-07", venue: "The Louisville Palace", city: "Louisville", state: "Kentucky" },
+  { date: "2026-04-09", venue: "Taft Theatre", city: "Cincinnati", state: "Ohio" },
+  { date: "2026-04-10", venue: "Taft Theatre", city: "Cincinnati", state: "Ohio" },
+  { date: "2026-04-12", venue: "Benedum Center", city: "Pittsburgh", state: "Pennsylvania" },
+  { date: "2026-04-14", venue: "State Theatre", city: "Cleveland", state: "Ohio" },
+  { date: "2026-04-16", venue: "Landmark Theatre", city: "Syracuse", state: "New York" },
+  { date: "2026-04-18", venue: "Orpheum Theatre", city: "Boston", state: "Massachusetts" },
+  { date: "2026-04-19", venue: "Orpheum Theatre", city: "Boston", state: "Massachusetts" },
+  { date: "2026-04-21", venue: "Beacon Theatre", city: "New York", state: "New York" },
+  { date: "2026-04-22", venue: "Beacon Theatre", city: "New York", state: "New York" },
+  { date: "2026-04-23", venue: "Beacon Theatre", city: "New York", state: "New York" },
+];
+
+const now = new Date();
+now.setHours(0, 0, 0, 0);
+
+const upcoming = concerts.filter(c => new Date(c.date) >= now);
+
+function getStates() {
+  return ['All', ...new Set(upcoming.map(c => c.state))];
+}
+
+let activeFilter = 'All';
+
+function buildFilters() {
+  const states = getStates();
+  if (states.length <= 2) return;
+  const row = document.getElementById('filters');
+  row.innerHTML = states.map(s =>
+    `<button class="filter-btn${s === 'All' ? ' active' : ''}" onclick="setFilter('${s}')">${s === 'All' ? 'All shows' : s}</button>`
+  ).join('');
+}
+
+function setFilter(state) {
+  activeFilter = state;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === (state === 'All' ? 'All shows' : state));
+  });
+  renderConcerts();
+}
+
+function daysAway(dateStr) {
+  const d = new Date(dateStr);
+  d.setHours(0, 0, 0, 0);
+  return Math.round((d - now) / (1000 * 60 * 60 * 24));
+}
+
+function renderConcerts() {
+  const filtered = activeFilter === 'All' ? upcoming : upcoming.filter(c => c.state === activeFilter);
+  const countEl = document.getElementById('count');
+  const listEl = document.getElementById('concert-list');
+
+  countEl.textContent = filtered.length
+    ? `${filtered.length} upcoming show${filtered.length !== 1 ? 's' : ''}`
+    : '';
+
+  if (!filtered.length) {
+    listEl.innerHTML = `<div class="no-shows">No upcoming shows found.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(c => {
+    const d = new Date(c.date);
+    const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+    const days = daysAway(c.date);
+    const daysLabel = days === 0 ? 'Tonight!' : days === 1 ? 'Tomorrow!' : `${days} days away`;
+    const isSoon = days <= 7;
+    return `<div class="concert-card">
+      <div class="concert-date">${dateStr}</div>
+      <div class="concert-venue">${c.venue}</div>
+      <div class="concert-location">${c.city}, ${c.state}</div>
+      <div class="concert-footer">
+        <span class="days-away${isSoon ? ' soon' : ''}">${daysLabel}</span>
+        <a class="ticket-link" href="https://www.bobdylan.com/on-tour/" target="_blank">Tickets</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+buildFilters();
+renderConcerts();
+</script>
+</body>
+</html>
